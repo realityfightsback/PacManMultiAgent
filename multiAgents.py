@@ -42,10 +42,16 @@ class ReflexAgent(Agent):
         legalMoves = gameState.getLegalActions()
 
         # Choose one of the best actions
+        print 'Evaluating position'
         scores = [self.evaluationFunction(gameState, action) for action in legalMoves]
         bestScore = max(scores)
-        bestIndices = [index for index in range(len(scores)) if scores[index] == bestScore]
-        chosenIndex = random.choice(bestIndices) # Pick randomly among the best
+        
+        if(random.random()>.2):
+            bestIndices = [index for index in range(len(scores)) if scores[index] == bestScore]
+        else:
+            bestIndices = [index for index in range(len(scores)) if scores[index] > -5000]
+        #probably bad and can fail, but don't want to ever select a ghost position, might run out of options get array out of bounds
+        chosenIndex = random.choice(bestIndices)  # Pick randomly among the best
 
         "Add more of your code here if you want to"
 
@@ -72,9 +78,70 @@ class ReflexAgent(Agent):
         newFood = successorGameState.getFood()
         newGhostStates = successorGameState.getGhostStates()
         newScaredTimes = [ghostState.scaredTimer for ghostState in newGhostStates]
+        
+        ghostPositions = [generatePossibleGhostMoves(ghostState.configuration.pos) for ghostState in newGhostStates]
+        #flatten to single list
+        ghostPositions = [item for sublist in ghostPositions for item in sublist] #fuck. Google found this to flatten. Try to learn later
+        
+
+        # consider ghost possible moves
+        minDistanceToFood = findNearestFood(successorGameState, newPos)
+        
 
         "*** YOUR CODE HERE ***"
-        return successorGameState.getScore()
+        # If we would move onto a ghost this move should be given the worst possible score
+        
+        #closer to food is better
+        score = successorGameState.getScore() - minDistanceToFood
+        
+        if(newPos in ghostPositions):
+            print 'Would overlap ghost and pacman!'
+            score += -10000
+        
+        
+        
+#         print '    Looking at %s where Pacman would be at %s with minFoodDistance of %s' % (action, newPos, minDistanceToFood)        
+#         print '        Returned score for move %s' % score                                                                           
+        
+        return score
+
+def findNearestFood(successorGameState, pacManPosition):
+    x, y = pacManPosition
+    
+    fx = 0
+    fy = 0
+    
+    minDistance = 10000
+    
+    foodGrid = successorGameState.data.food
+    
+    while fx < foodGrid.width:
+        while fy < foodGrid.height:
+            if(foodGrid[fx][fy] or successorGameState.data._win):
+                tempMin = manhattanDistance((fx,fy), (x,y))
+                if(tempMin < minDistance):
+                    minDistance = tempMin
+            fy+=1
+        fy = 0
+        fx+=1
+    
+    return minDistance
+# min(iterable)
+    
+    #expand out in a radius
+    
+    successorGameState.food
+
+def generatePossibleGhostMoves(ghostPosition):
+    t = []
+    t.append(ghostPosition)
+    
+    t.append((ghostPosition[0] + 1, ghostPosition[1]))
+    t.append((ghostPosition[0] - 1, ghostPosition[1]))
+    t.append((ghostPosition[0], ghostPosition[1] + 1))
+    t.append((ghostPosition[0], ghostPosition[1] - 1))
+
+    return t
 
 def scoreEvaluationFunction(currentGameState):
     """
@@ -101,8 +168,8 @@ class MultiAgentSearchAgent(Agent):
       is another abstract class.
     """
 
-    def __init__(self, evalFn = 'scoreEvaluationFunction', depth = '2'):
-        self.index = 0 # Pacman is always agent index 0
+    def __init__(self, evalFn='scoreEvaluationFunction', depth='2'):
+        self.index = 0  # Pacman is always agent index 0
         self.evaluationFunction = util.lookup(evalFn, globals())
         self.depth = int(depth)
 

@@ -46,11 +46,11 @@ class ReflexAgent(Agent):
         scores = [self.evaluationFunction(gameState, action) for action in legalMoves]
         bestScore = max(scores)
         
-        if(random.random()>.2):
+        if(random.random() > .2):
             bestIndices = [index for index in range(len(scores)) if scores[index] == bestScore]
         else:
             bestIndices = [index for index in range(len(scores)) if scores[index] > -5000]
-        #probably bad and can fail, but don't want to ever select a ghost position, might run out of options get array out of bounds
+        # probably bad and can fail, but don't want to ever select a ghost position, might run out of options get array out of bounds
         chosenIndex = random.choice(bestIndices)  # Pick randomly among the best
 
         "Add more of your code here if you want to"
@@ -80,8 +80,8 @@ class ReflexAgent(Agent):
         newScaredTimes = [ghostState.scaredTimer for ghostState in newGhostStates]
         
         ghostPositions = [generatePossibleGhostMoves(ghostState.configuration.pos) for ghostState in newGhostStates]
-        #flatten to single list
-        ghostPositions = [item for sublist in ghostPositions for item in sublist] #fuck. Google found this to flatten. Try to learn later
+        # flatten to single list
+        ghostPositions = [item for sublist in ghostPositions for item in sublist]  # fuck. Google found this to flatten. Try to learn later
         
 
         # consider ghost possible moves
@@ -91,7 +91,7 @@ class ReflexAgent(Agent):
         "*** YOUR CODE HERE ***"
         # If we would move onto a ghost this move should be given the worst possible score
         
-        #closer to food is better
+        # closer to food is better
         score = successorGameState.getScore() - minDistanceToFood
         
         if(newPos in ghostPositions):
@@ -118,17 +118,17 @@ def findNearestFood(successorGameState, pacManPosition):
     while fx < foodGrid.width:
         while fy < foodGrid.height:
             if(foodGrid[fx][fy] or successorGameState.data._win):
-                tempMin = manhattanDistance((fx,fy), (x,y))
+                tempMin = manhattanDistance((fx, fy), (x, y))
                 if(tempMin < minDistance):
                     minDistance = tempMin
-            fy+=1
+            fy += 1
         fy = 0
-        fx+=1
+        fx += 1
     
     return minDistance
 # min(iterable)
     
-    #expand out in a radius
+    # expand out in a radius
     
     successorGameState.food
 
@@ -202,8 +202,118 @@ class MinimaxAgent(MultiAgentSearchAgent):
             Returns whether or not the game state is a losing state
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        
+#         return self.maxValue(1, gameState)[1]
+        return self.miniMax(gameState, gameState.getNumAgents() * self.depth, 0)[1]
+        
+    def miniMax(self, gameState, depth, agentIndex):
+        if(depth == 0 or gameState.getLegalActions(agentIndex) == []):
+            return (self.evaluationFunction(gameState), 'NA')
+            
+        if(agentIndex == 0):#Maximizer
+            bestValue = (-10000000, "N/A")
 
+            for x in gameState.getLegalActions(0):
+                #pass processing to next min node
+                tempValue = self.miniMax(gameState.generateSuccessor(0, x), depth-1, 1)
+                
+                if(tempValue[0] >= bestValue[0]):
+                    bestValue = (tempValue[0], x)   
+    
+        else:#Minimizer
+            
+            bestValue = (10000000, "N/A")
+
+            numOfGhosts = gameState.getNumAgents()-1
+
+            if(numOfGhosts > agentIndex): #More ghosts
+                for x in gameState.getLegalActions(agentIndex):
+                    tempValue = self.miniMax(gameState.generateSuccessor(agentIndex, x), depth-1, agentIndex+1)
+                    if(tempValue[0] <= bestValue[0]):
+                        bestValue = (tempValue[0], x)   
+    
+            else:#Back to PacMan
+                for x in gameState.getLegalActions(agentIndex):
+                    tempValue = self.miniMax(gameState.generateSuccessor(agentIndex, x), depth-1, 0)
+                    if(tempValue[0] <= bestValue[0]):
+                        bestValue = (tempValue[0], x)   
+    
+        return bestValue
+        
+    def maxValue(self, level, gameState):
+        bestValue = (-999999999, 'None')
+#         if(terminalTest(gameState)):
+#             return self.evaluationFunction(gameState)
+#       
+        numOfAgents = gameState.getNumAgents()
+        
+        
+        if (numOfAgents == 1):
+            # Just pacman, maximize!
+            for x in gameState.getLegalActions(0):
+                tempValue = self.evaluationFunction(gameState)
+                
+                if(tempValue >= bestValue[0]):
+                    bestValue = (tempValue, x)        
+        else:
+            # We got ghosts, do calculations
+            
+            if(gameState.getLegalActions(0) == []):
+                return (self.evaluationFunction(gameState), "N/A")
+            else:
+                for x in gameState.getLegalActions(0):
+                    self.printWithTab(level, 'Exploring MAX')
+                    tempValue = self.minValue(level, 0, gameState.generateSuccessor(0, x))
+                    if(tempValue[0] >= bestValue[0]):
+                        bestValue = (tempValue[0], x)
+        
+        self.printWithTab(level, 'Found max value of ' + str(bestValue))
+        
+        return bestValue
+            
+    def minValue(self, level, index, gameState):
+        bestValue = (999999999, 'None')
+#         if(terminalTest(gameState)):
+#             return self.evaluationFunction(gameState)
+#       
+        numOfGhosts = gameState.getNumAgents() - 1
+        
+        index = index + 1
+
+        self.printWithTab(level, 'Exploring MIN')
+        
+        if(index == numOfGhosts):  # completing a ply
+            level = level + 1 
+            if(level == self.depth):  # Hit the terminal state (final ghost decision)
+                bestValue = (self.evaluationFunction(gameState), 'N/A')
+                # final ghost, final ply, generates an actual value
+                    
+            else:  # more plies to come
+                for x in gameState.getLegalActions(index):
+                    # reset for MAX
+                    tempValue = self.maxValue(level, gameState.generateSuccessor(index, x))
+                    if(tempValue[0] <= bestValue[0]):
+                        bestValue = (tempValue[0], x)
+        else:  # more ghosts to come
+            for x in gameState.getLegalActions(index):
+                    tempValue = self.minValue(level, index, gameState.generateSuccessor(index, x))
+                    if(tempValue[0] <= bestValue[0]):
+                        bestValue = (tempValue, x)
+        
+        self.printWithTab(level, 'Found min value of ' + str(bestValue))
+        
+        return bestValue        
+        
+    def printWithTab(self, level, string):
+            tab = '  '
+            result = ''
+            x = 0
+            while(x < level):
+                result = result + tab 
+                x = x + 1
+            
+            print tab + string + " at level " + str(level)
+            
 class AlphaBetaAgent(MultiAgentSearchAgent):
     """
       Your minimax agent with alpha-beta pruning (question 3)

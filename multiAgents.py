@@ -324,9 +324,9 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
           Returns the minimax action using self.depth and self.evaluationFunction
         """
         "*** YOUR CODE HERE ***"
-        return self.miniMaxWithPruning(gameState, gameState.getNumAgents() * self.depth, 0, -float("Inf"), float("Inf"))[1]
+        return self.miniMaxWithAlphaBeta(gameState, gameState.getNumAgents() * self.depth, 0, -float("Inf"), float("Inf"))[1]
     
-    def miniMaxWithPruning(self, gameState, depth, agentIndex, alpha, beta):
+    def miniMaxWithAlphaBeta(self, gameState, depth, agentIndex, alpha, beta):
         if(depth == 0 or gameState.getLegalActions(agentIndex) == []):
             return (self.evaluationFunction(gameState), 'NA')
             
@@ -335,7 +335,7 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
 
             for x in gameState.getLegalActions(0):
                 # pass processing to next min node
-                tempValue = self.miniMaxWithPruning(gameState.generateSuccessor(0, x), depth - 1, 1, alpha, beta)
+                tempValue = self.miniMaxWithAlphaBeta(gameState.generateSuccessor(0, x), depth - 1, 1, alpha, beta)
                 
                 if(tempValue[0] >= bestValue[0]):
                     bestValue = (tempValue[0], x)   
@@ -354,9 +354,9 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
 
             for x in gameState.getLegalActions(agentIndex):
                 if(numOfGhosts > agentIndex):  # More ghosts
-                    tempValue = self.miniMaxWithPruning(gameState.generateSuccessor(agentIndex, x), depth - 1, agentIndex + 1, alpha, beta)
+                    tempValue = self.miniMaxWithAlphaBeta(gameState.generateSuccessor(agentIndex, x), depth - 1, agentIndex + 1, alpha, beta)
                 else:
-                    tempValue = self.miniMaxWithPruning(gameState.generateSuccessor(agentIndex, x), depth - 1, 0, alpha, beta)
+                    tempValue = self.miniMaxWithAlphaBeta(gameState.generateSuccessor(agentIndex, x), depth - 1, 0, alpha, beta)
                 
                 if(tempValue[0] <= bestValue[0]):
                     bestValue = (tempValue[0], x)
@@ -382,7 +382,40 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
           legal moves.
         """
         "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        
+        return self.expectiMax(gameState, gameState.getNumAgents() * self.depth, 0)[1]
+    
+
+    def expectiMax(self, gameState, depth, agentIndex):
+        if(depth == 0 or gameState.getLegalActions(agentIndex) == []):
+            return (self.evaluationFunction(gameState), 'NA')
+            
+        if(agentIndex == 0):  # Maximizer
+            bestValue = (-float("inf"), "N/A")
+
+            for x in gameState.getLegalActions(0):
+                # pass processing to next min node
+                tempValue = self.expectiMax(gameState.generateSuccessor(0, x), depth - 1, 1)
+                
+                if(tempValue[0] >= bestValue[0]):
+                    bestValue = (tempValue[0], x)   
+                
+        else:  # Expected Value
+            numOfGhosts = gameState.getNumAgents() - 1
+
+            numOfGameStates = float(len(gameState.getLegalActions(0)))
+            runningTotal = 0
+            
+            for x in gameState.getLegalActions(agentIndex):
+                if(numOfGhosts > agentIndex):  # More ghosts
+                    tempValue = self.expectiMax(gameState.generateSuccessor(agentIndex, x), depth - 1, agentIndex + 1)
+                else:
+                    tempValue = self.expectiMax(gameState.generateSuccessor(agentIndex, x), depth - 1, 0)
+                
+                runningTotal = runningTotal + tempValue[0]
+                
+            return (runningTotal/numOfGameStates, "N/A")
+        return bestValue
 
 def betterEvaluationFunction(currentGameState):
     """

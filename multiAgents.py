@@ -403,7 +403,7 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         else:  # Expected Value
             numOfGhosts = gameState.getNumAgents() - 1
 
-            numOfGameStates = float(len(gameState.getLegalActions(0)))
+            numOfGameStates = float(len(gameState.getLegalActions(agentIndex)))
             runningTotal = 0
             
             for x in gameState.getLegalActions(agentIndex):
@@ -425,8 +425,28 @@ def betterEvaluationFunction(currentGameState):
       DESCRIPTION: <write something here so we know what you did>
     """
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    
+    closestFood = findNearestFood(currentGameState, currentGameState.data.agentStates[0].configuration.pos)
+    
+    return currentGameState.getScore() - closestFood
+      
 
+def findNearestGhostDistance(currentGameState):
+    
+    closestGhostDistance = float("inf")
+    
+    firstRun = true
+    for x in (currentGameState.data.agentStates):
+        if(firstRun):#this is pacman
+            firstRun = false
+            continue
+    
+        temp = manhattanDistance(x.configuration.pos, currentGameState.data.agentStates[0].configuration.pos)
+
+        if(temp < closestGhostDistance and x.scaredTimer > 0):
+            closestGhostDistance = temp
+
+    return closestGhostDistance
 # Abbreviation
 better = betterEvaluationFunction
 
